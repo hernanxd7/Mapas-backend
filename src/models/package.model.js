@@ -7,6 +7,21 @@ const createPackage = async (deliveryAddress, deliveryId) => {
   return result.rows[0];
 };
 
+// Nueva función para crear paquetes con destinatario
+const createPackageNew = async (recipientName, address, deliveryId = null) => {
+  const query = 'INSERT INTO packages (recipient_name, delivery_address, delivery_id, status) VALUES ($1, $2, $3, $4) RETURNING *';
+  const values = [recipientName, address, deliveryId, 'asignado'];
+  const result = await db.query(query, values);
+  return result.rows[0];
+};
+
+// Nueva función para asignar delivery a un paquete
+const assignDeliveryToPackage = async (packageId, deliveryId) => {
+  const query = 'UPDATE packages SET delivery_id = $1 WHERE id = $2 RETURNING *';
+  const result = await db.query(query, [deliveryId, packageId]);
+  return result.rows[0];
+};
+
 const getPackagesByDeliveryId = async (deliveryId) => {
   const query = 'SELECT * FROM packages WHERE delivery_id = $1';
   const result = await db.query(query, [deliveryId]);
@@ -31,6 +46,8 @@ const getAllPackages = async () => {
 
 module.exports = {
   createPackage,
+  createPackageNew,
+  assignDeliveryToPackage,
   getPackagesByDeliveryId,
   updatePackageStatus,
   getAllPackages

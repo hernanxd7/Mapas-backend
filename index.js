@@ -43,6 +43,12 @@ app.use('/api/packages', verifyToken, packageRoutes);
 io.on('connection', (socket) => {
   console.log('Cliente conectado:', socket.id);
 
+  // Nuevo evento: cuando un admin se conecta y solicita el estado actual
+  socket.on('admin-connected', () => {
+    console.log('Admin conectado, enviando estado actual de deliveries activos');
+    socket.emit('active-deliveries-updated', Array.from(activeSessions.keys()));
+  });
+
   // Cuando un delivery se conecta
   socket.on('delivery-login', (data) => {
     const { userId, username, role } = data;

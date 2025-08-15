@@ -14,14 +14,21 @@ const app = express();
 const server = http.createServer(app);
 const io = socketIo(server, {
   cors: {
-    origin: 'http://localhost:4200', // Específico para Angular
+    origin: process.env.NODE_ENV === 'production' 
+      ? 'https://tu-dominio-de-produccion.com' 
+      : 'http://localhost:4200',
     methods: ['GET', 'POST'],
     credentials: true
   }
 });
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: process.env.NODE_ENV === 'production' 
+    ? 'https://tu-dominio-de-produccion.com' 
+    : 'http://localhost:4200',
+  credentials: true
+}));
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
@@ -106,6 +113,22 @@ io.on('connection', (socket) => {
         io.emit('active-deliveries-updated', Array.from(activeSessions.keys()));
         break;
       }
+    }
+  });
+
+  // Nuevo evento para simulación de ruta
+  socket.on('route-simulation', (data) => {
+    // Obtener el socketId del delivery específico si está conectado
+    const deliverySession = activeSessions.get(data.deliveryId);
+    
+    if (deliverySession) {
+      // Emitir solo al delivery específico y al admin que inició la simulación
+      io.to(deliverySession.socketId).emit('route-simulation-updated', data);
+      socket.emit('route-simulation-updated', data); // También al admin que lo inició
+    } else {
+      // Si el delivery no está conectado, solo emitir al admin
+      socket.emit('route-simulation-updated', data);
+      console.log(`Delivery ${data.deliveryId} no está conectado para recibir simulación`);
     }
   });
 });
